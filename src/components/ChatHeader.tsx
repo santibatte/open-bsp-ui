@@ -7,16 +7,21 @@ import { useNavigate } from "@tanstack/react-router";
 import {
   useContact,
   useContactByAddress,
+  useCreateContact,
   useUpdateContact,
 } from "@/queries/useContacts";
 import { useContactAddress } from "@/queries/useContactsAddresses";
+import { queryKeys } from "@/queries/queryKeys";
 import type { InstagramContactAddressExtra } from "@/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
 
 export default function Header() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const activeConvId = useBoundStore((state) => state.ui.activeConvId);
+  const orgId = useBoundStore((state) => state.ui.activeOrgId);
 
   const conversation = useBoundStore((state) =>
     state.chat.conversations.get(state.ui.activeConvId || ""),
@@ -35,6 +40,7 @@ export default function Header() {
     conversation?.service,
   );
   const updateContact = useUpdateContact();
+  const createContact = useCreateContact();
 
   const [isEditingName, setIsEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
@@ -83,19 +89,53 @@ export default function Header() {
     setIsEditingName(true);
   }
 
+  // Both useCreateContact and useUpdateContact only invalidate the
+  // contacts list/detail caches, not the byAddress/addressDetail queries
+  // this header reads from - without this the header keeps showing the
+  // old name/phone until an unrelated refetch happens to occur.
+  function invalidateContactAddressCaches() {
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.contacts.addressDetail(orgId, service, address),
+    });
+  }
+
   function saveName() {
     setIsEditingName(false);
 
-    if (!contact || !fullContact) return;
-
     const trimmed = nameDraft.trim();
-    if (trimmed === (contact.name ?? "")) return;
 
-    updateContact.mutate({
-      id: contact.id,
-      name: trimmed || null,
-      addresses: fullContact.addresses,
-    });
+    // Case 1: a contacts row already exists for this address - keep
+    // round-tripping fullContact.addresses to avoid unlinking it.
+    if (contact && fullContact) {
+      if (trimmed === (contact.name ?? "")) return;
+
+      updateContact.mutate(
+        {
+          id: contact.id,
+          name: trimmed || null,
+          addresses: fullContact.addresses,
+        },
+        { onSuccess: invalidateContactAddressCaches },
+      );
+      return;
+    }
+
+    // Case 2: no contacts row exists yet (the common case in practice -
+    // the contacts_addresses -> contacts linking trigger doesn't actually
+    // run on first message). Create one and link this address to it
+    // instead of silently no-op'ing. Skip if there's nothing to save.
+    // (organization_id is required by the insert type, but the mutation
+    // always overwrites it with the active org anyway.)
+    if (!trimmed || !address || !service || !orgId) return;
+
+    createContact.mutate(
+      {
+        name: trimmed,
+        organization_id: orgId,
+        addresses: [{ address, service }],
+      },
+      { onSuccess: invalidateContactAddressCaches },
+    );
   }
 
   function cancelEditingName() {
@@ -116,8 +156,10 @@ export default function Header() {
   }
 
   // The contact-naming affordance only makes sense for 1:1 conversations
-  // that resolved to a contact (groups have no single contact to name).
-  const canEditName = !isGroup && !!contact;
+  // with a resolvable address (groups have no single contact to name).
+  // Whether a contacts row already exists is irrelevant here - saveName
+  // creates one on the fly if needed.
+  const canEditName = !isGroup && !!address;
 
   return (
     <div className="header border-b border-border bg-background z-30 shadow-md">

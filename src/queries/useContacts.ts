@@ -122,12 +122,28 @@ export function useCreateContact() {
         .single()
         .throwOnError();
 
-      // Link addresses to contact (deduplicate by normalized address)
+      // Link addresses to contact (deduplicate by normalized address).
+      // Default to "whatsapp" for callers that don't set a service (e.g. the
+      // manual /contacts/new form, which only ever creates phone numbers) -
+      // other callers (e.g. linking a contact from an existing conversation)
+      // pass the conversation's own service explicitly. Phone normalization
+      // only makes sense for the phone-number-based services; other
+      // services (Instagram, local, ...) keep their address as-is.
       const toLink = addresses
         .filter((a) => Boolean(a.address))
-        .map((a) => ({ ...a, address: normalizePhoneNumber(a.address!) }))
+        .map((a) => {
+          const service = a.service ?? "whatsapp";
+          const address =
+            service === "whatsapp" || service === "whatsapp-web"
+              ? normalizePhoneNumber(a.address!)
+              : a.address!;
+          return { ...a, address, service };
+        })
         .filter(
-          (a, i, arr) => arr.findIndex((x) => x.address === a.address) === i,
+          (a, i, arr) =>
+            arr.findIndex(
+              (x) => x.address === a.address && x.service === a.service,
+            ) === i,
         );
 
       toLink.length &&
@@ -139,7 +155,6 @@ export function useCreateContact() {
                 ({
                   ...a,
                   organization_id: orgId,
-                  service: "whatsapp" as const,
                   contact_id: contact.id,
                 }) as ContactAddressInsert,
             ),
