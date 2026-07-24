@@ -97,6 +97,13 @@ export default function Header() {
     void queryClient.invalidateQueries({
       queryKey: queryKeys.contacts.addressDetail(orgId, service, address),
     });
+    // `contact` (contact?.name, checked before contactAddress?.extra?.name in
+    // the display priority, and read as `fullContact`/gating on next open) is
+    // cached under this separate key — missing this one is why the header
+    // kept showing the old name/number right after saving.
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.contacts.byAddress(orgId, service, address),
+    });
   }
 
   function saveName() {
