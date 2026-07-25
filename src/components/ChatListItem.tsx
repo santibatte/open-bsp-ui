@@ -55,6 +55,16 @@ function mediaPreview(t: (content: string) => ReactNode, message?: MessageRow) {
     return { mediaIcon, mediaPreviewContent };
   }
 
+  // WhatsApp itself could not classify the message — same short line as the
+  // chat bubble, instead of dumping the raw JSON in the conversation list.
+  if (
+    message.content.type === "data" &&
+    message.content.kind === "unsupported"
+  ) {
+    mediaPreviewContent = t("Este tipo de mensaje no es compatible");
+    return { mediaIcon, mediaPreviewContent };
+  }
+
   if (message.content.type !== "file") {
     return { mediaIcon, mediaPreviewContent };
   }
@@ -401,10 +411,12 @@ export default function ChatListItem({ itemId }: { itemId: string }) {
                   {preview?.content.type === "text" && preview.content.text}
                   {preview?.content.type === "data" &&
                     preview.content.kind !== "media_placeholder" &&
+                    preview.content.kind !== "unsupported" &&
                     JSON.stringify(preview.content.data)}
                   {(preview?.content.type === "file" ||
                     (preview?.content.type === "data" &&
-                      preview.content.kind === "media_placeholder")) &&
+                      (preview.content.kind === "media_placeholder" ||
+                        preview.content.kind === "unsupported"))) &&
                     mediaPreviewContent}
                 </div>
               </div>

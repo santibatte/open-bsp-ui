@@ -509,6 +509,31 @@ export default function Message(props: UIMessage & { message: MessageRow }) {
       />
     );
     text = true;
+  } else if (
+    props.message.content.type === "data" &&
+    props.message.content.kind === "unsupported"
+  ) {
+    // WhatsApp itself could not classify the message (e.g. a message type
+    // its own apps don't render either) — mirror the short, generic line
+    // WhatsApp clients show in that case instead of dumping the raw JSON.
+    // The full Meta error detail (code/title/reason) still lives in
+    // message.content.data for anyone digging in via the DB.
+    content = (
+      <TextMessage
+        header={headerText}
+        body={`_${t("Este tipo de mensaje no es compatible")}_`}
+        type="markdown"
+        direction={props.message.direction}
+        timestamp={props.message.timestamp}
+        status={
+          props.message.direction === "outgoing"
+            ? props.message.status
+            : undefined
+        }
+        fixedWidth={fixedWidth}
+      />
+    );
+    text = true;
   } else if (props.message.content.type === "data") {
     content = (
       <TextMessage
