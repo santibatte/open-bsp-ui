@@ -61,6 +61,7 @@ export function detectDefaultLanguage(): Language {
 
 export type UIState = {
   templatePicker: boolean;
+  emojiPicker: boolean;
   templateDrafts: Map<string, TemplateDraft>;
   activeOrgId: string | null;
   activeConvId: string | null;
@@ -97,6 +98,7 @@ export const createUISlice: StateCreator<Partial<AppState>> = (
   ) => void,
 ) => ({
   templatePicker: false,
+  emojiPicker: false,
   templateDrafts: new Map(),
   activeOrgId: null,
   activeConvId: null,

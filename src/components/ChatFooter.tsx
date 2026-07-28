@@ -1,5 +1,5 @@
 import { useContext, useEffect, useRef, useState } from "react";
-import { Plus, X } from "lucide-react";
+import { Plus, Smile, X } from "lucide-react";
 import {
   newMessage,
   pushMessageToDb,
@@ -22,6 +22,7 @@ import { useCurrentAgent } from "@/queries/useAgents";
 import { moveCursorToEnd } from "@/utils/UtilityFunctions";
 import { htmlToMarkdown } from "@/utils/htmlToMarkdown";
 import TemplatePicker from "./TemplatePicker";
+import EmojiPicker from "./EmojiPicker";
 
 function TemplateVarInput({
   placeholder,
@@ -83,6 +84,7 @@ export default function ChatFooter() {
   const setSendAsContact = useBoundStore((store) => store.ui.setSendAsContact);
   const toggle = useBoundStore((store) => store.ui.toggle);
   const templatePicker = useBoundStore((store) => store.ui.templatePicker);
+  const emojiPicker = useBoundStore((store) => store.ui.emojiPicker);
   const templateDraftEntry = useBoundStore((store) =>
     store.ui.templateDrafts.get(store.ui.activeConvId || ""),
   );
@@ -271,6 +273,38 @@ export default function ChatFooter() {
 
     if (editableDiv.current) {
       editableDiv.current.textContent = "";
+    }
+  };
+
+  const insertEmoji = (emoji: string) => {
+    if (!conv || !editableDiv.current) return;
+
+    editableDiv.current.focus();
+
+    const selection = window.getSelection();
+    const range =
+      selection?.rangeCount && editableDiv.current.contains(selection.anchorNode)
+        ? selection.getRangeAt(0)
+        : null;
+
+    if (range) {
+      range.deleteContents();
+      const textNode = document.createTextNode(emoji);
+      range.insertNode(textNode);
+      range.setStartAfter(textNode);
+      range.collapse(true);
+      selection!.removeAllRanges();
+      selection!.addRange(range);
+    } else {
+      editableDiv.current.appendChild(document.createTextNode(emoji));
+      moveCursorToEnd(editableDiv.current);
+    }
+
+    const updated = htmlToMarkdown(editableDiv.current.innerHTML);
+    setMessage(updated);
+
+    if (conv.created_at !== conv.updated_at) {
+      debounce(() => saveDraft(conv, updated, sendAsContact), 3000);
     }
   };
 
@@ -470,6 +504,9 @@ export default function ChatFooter() {
     conv && (
       <div className="relative mx-[12px] mb-[12px] mt-[4px] lg:mt-[0px] z-10">
         {templatePicker && <TemplatePicker />}
+        {emojiPicker && !templatePicker && (
+          <EmojiPicker onSelect={insertEmoji} />
+        )}
         <div
           className={
             "flex items-end text-foreground p-[5px] rounded-[24px] shadow-[0_0_4px_0px_rgba(0,0,0,0.1)]" +
@@ -503,6 +540,23 @@ export default function ChatFooter() {
               </button>
             )}
           </div>
+
+          {!templateDraft && (
+            <div className="shrink-0">
+              <button
+                disabled={!inCSWindow}
+                className={
+                  "p-[8px] rounded-full" +
+                  (!inCSWindow ? "" : " cursor-pointer hover:bg-accent") +
+                  (emojiPicker ? " bg-accent" : "")
+                }
+                onClick={() => toggle("emojiPicker")}
+                title={t("Emojis")}
+              >
+                <Smile className="w-[24px] h-[24px]" />
+              </button>
+            </div>
+          )}
 
           <input
             disabled={!inCSWindow}
