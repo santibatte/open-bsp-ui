@@ -3,7 +3,7 @@ import SectionHeader from "@/components/SectionHeader";
 import SectionItem from "@/components/SectionItem";
 import { useTranslation } from "@/hooks/useTranslation";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Building2, Users, Webhook, Key } from "lucide-react";
+import { Building2, Users, Webhook, Key, Zap } from "lucide-react";
 
 export const Route = createFileRoute("/_auth/settings/")({
   component: SettingsIndex,
@@ -57,6 +57,20 @@ function SettingsIndex() {
             onClick={() =>
               navigate({
                 to: "/settings/webhooks",
+                hash: (prevHash) => prevHash!,
+              })
+            }
+          />
+          <SectionItem
+            title={t("Respuestas rápidas")}
+            aside={
+              <div className="p-[8px]">
+                <Zap className="w-[24px] h-[24px] text-muted-foreground" />
+              </div>
+            }
+            onClick={() =>
+              navigate({
+                to: "/settings/quick-replies",
                 hash: (prevHash) => prevHash!,
               })
             }

@@ -34,6 +34,7 @@ import { Route as AuthContactsContactIdRouteImport } from './routes/_auth/contac
 import { Route as AuthAgentsNewRouteImport } from './routes/_auth/agents/new'
 import { Route as AuthAgentsAgentIdRouteImport } from './routes/_auth/agents/$agentId'
 import { Route as AuthSettingsWebhooksIndexRouteImport } from './routes/_auth/settings/webhooks/index'
+import { Route as AuthSettingsQuickRepliesIndexRouteImport } from './routes/_auth/settings/quick-replies/index'
 import { Route as AuthSettingsOrganizationIndexRouteImport } from './routes/_auth/settings/organization/index'
 import { Route as AuthSettingsMembersIndexRouteImport } from './routes/_auth/settings/members/index'
 import { Route as AuthSettingsApiKeysIndexRouteImport } from './routes/_auth/settings/api-keys/index'
@@ -42,6 +43,8 @@ import { Route as AuthIntegrationsWhatsappWebIndexRouteImport } from './routes/_
 import { Route as AuthIntegrationsInstagramIndexRouteImport } from './routes/_auth/integrations/instagram/index'
 import { Route as AuthSettingsWebhooksNewRouteImport } from './routes/_auth/settings/webhooks/new'
 import { Route as AuthSettingsWebhooksWebhookIdRouteImport } from './routes/_auth/settings/webhooks/$webhookId'
+import { Route as AuthSettingsQuickRepliesNewRouteImport } from './routes/_auth/settings/quick-replies/new'
+import { Route as AuthSettingsQuickRepliesQuickReplyIdRouteImport } from './routes/_auth/settings/quick-replies/$quickReplyId'
 import { Route as AuthSettingsOrganizationNewRouteImport } from './routes/_auth/settings/organization/new'
 import { Route as AuthSettingsMembersNewRouteImport } from './routes/_auth/settings/members/new'
 import { Route as AuthSettingsMembersMemberIdRouteImport } from './routes/_auth/settings/members/$memberId'
@@ -190,6 +193,12 @@ const AuthSettingsWebhooksIndexRoute =
     path: '/settings/webhooks/',
     getParentRoute: () => AuthRoute,
   } as any)
+const AuthSettingsQuickRepliesIndexRoute =
+  AuthSettingsQuickRepliesIndexRouteImport.update({
+    id: '/settings/quick-replies/',
+    path: '/settings/quick-replies/',
+    getParentRoute: () => AuthRoute,
+  } as any)
 const AuthSettingsOrganizationIndexRoute =
   AuthSettingsOrganizationIndexRouteImport.update({
     id: '/settings/organization/',
@@ -235,6 +244,18 @@ const AuthSettingsWebhooksWebhookIdRoute =
   AuthSettingsWebhooksWebhookIdRouteImport.update({
     id: '/settings/webhooks/$webhookId',
     path: '/settings/webhooks/$webhookId',
+    getParentRoute: () => AuthRoute,
+  } as any)
+const AuthSettingsQuickRepliesNewRoute =
+  AuthSettingsQuickRepliesNewRouteImport.update({
+    id: '/settings/quick-replies/new',
+    path: '/settings/quick-replies/new',
+    getParentRoute: () => AuthRoute,
+  } as any)
+const AuthSettingsQuickRepliesQuickReplyIdRoute =
+  AuthSettingsQuickRepliesQuickReplyIdRouteImport.update({
+    id: '/settings/quick-replies/$quickReplyId',
+    path: '/settings/quick-replies/$quickReplyId',
     getParentRoute: () => AuthRoute,
   } as any)
 const AuthSettingsOrganizationNewRoute =
@@ -388,6 +409,8 @@ export interface FileRoutesByFullPath {
   '/settings/members/$memberId': typeof AuthSettingsMembersMemberIdRoute
   '/settings/members/new': typeof AuthSettingsMembersNewRoute
   '/settings/organization/new': typeof AuthSettingsOrganizationNewRoute
+  '/settings/quick-replies/$quickReplyId': typeof AuthSettingsQuickRepliesQuickReplyIdRoute
+  '/settings/quick-replies/new': typeof AuthSettingsQuickRepliesNewRoute
   '/settings/webhooks/$webhookId': typeof AuthSettingsWebhooksWebhookIdRoute
   '/settings/webhooks/new': typeof AuthSettingsWebhooksNewRoute
   '/integrations/instagram': typeof AuthIntegrationsInstagramIndexRoute
@@ -396,6 +419,7 @@ export interface FileRoutesByFullPath {
   '/settings/api-keys': typeof AuthSettingsApiKeysIndexRoute
   '/settings/members': typeof AuthSettingsMembersIndexRoute
   '/settings/organization': typeof AuthSettingsOrganizationIndexRoute
+  '/settings/quick-replies': typeof AuthSettingsQuickRepliesIndexRoute
   '/settings/webhooks': typeof AuthSettingsWebhooksIndexRoute
   '/integrations/instagram/onboarding/$tokenId': typeof AuthIntegrationsInstagramOnboardingTokenIdRoute
   '/integrations/instagram/onboarding/new': typeof AuthIntegrationsInstagramOnboardingNewRoute
@@ -441,6 +465,8 @@ export interface FileRoutesByTo {
   '/settings/members/$memberId': typeof AuthSettingsMembersMemberIdRoute
   '/settings/members/new': typeof AuthSettingsMembersNewRoute
   '/settings/organization/new': typeof AuthSettingsOrganizationNewRoute
+  '/settings/quick-replies/$quickReplyId': typeof AuthSettingsQuickRepliesQuickReplyIdRoute
+  '/settings/quick-replies/new': typeof AuthSettingsQuickRepliesNewRoute
   '/settings/webhooks/$webhookId': typeof AuthSettingsWebhooksWebhookIdRoute
   '/settings/webhooks/new': typeof AuthSettingsWebhooksNewRoute
   '/integrations/instagram': typeof AuthIntegrationsInstagramIndexRoute
@@ -449,6 +475,7 @@ export interface FileRoutesByTo {
   '/settings/api-keys': typeof AuthSettingsApiKeysIndexRoute
   '/settings/members': typeof AuthSettingsMembersIndexRoute
   '/settings/organization': typeof AuthSettingsOrganizationIndexRoute
+  '/settings/quick-replies': typeof AuthSettingsQuickRepliesIndexRoute
   '/settings/webhooks': typeof AuthSettingsWebhooksIndexRoute
   '/integrations/instagram/onboarding/$tokenId': typeof AuthIntegrationsInstagramOnboardingTokenIdRoute
   '/integrations/instagram/onboarding/new': typeof AuthIntegrationsInstagramOnboardingNewRoute
@@ -497,6 +524,8 @@ export interface FileRoutesById {
   '/_auth/settings/members/$memberId': typeof AuthSettingsMembersMemberIdRoute
   '/_auth/settings/members/new': typeof AuthSettingsMembersNewRoute
   '/_auth/settings/organization/new': typeof AuthSettingsOrganizationNewRoute
+  '/_auth/settings/quick-replies/$quickReplyId': typeof AuthSettingsQuickRepliesQuickReplyIdRoute
+  '/_auth/settings/quick-replies/new': typeof AuthSettingsQuickRepliesNewRoute
   '/_auth/settings/webhooks/$webhookId': typeof AuthSettingsWebhooksWebhookIdRoute
   '/_auth/settings/webhooks/new': typeof AuthSettingsWebhooksNewRoute
   '/_auth/integrations/instagram/': typeof AuthIntegrationsInstagramIndexRoute
@@ -505,6 +534,7 @@ export interface FileRoutesById {
   '/_auth/settings/api-keys/': typeof AuthSettingsApiKeysIndexRoute
   '/_auth/settings/members/': typeof AuthSettingsMembersIndexRoute
   '/_auth/settings/organization/': typeof AuthSettingsOrganizationIndexRoute
+  '/_auth/settings/quick-replies/': typeof AuthSettingsQuickRepliesIndexRoute
   '/_auth/settings/webhooks/': typeof AuthSettingsWebhooksIndexRoute
   '/_auth/integrations/instagram/onboarding/$tokenId': typeof AuthIntegrationsInstagramOnboardingTokenIdRoute
   '/_auth/integrations/instagram/onboarding/new': typeof AuthIntegrationsInstagramOnboardingNewRoute
@@ -553,6 +583,8 @@ export interface FileRouteTypes {
     | '/settings/members/$memberId'
     | '/settings/members/new'
     | '/settings/organization/new'
+    | '/settings/quick-replies/$quickReplyId'
+    | '/settings/quick-replies/new'
     | '/settings/webhooks/$webhookId'
     | '/settings/webhooks/new'
     | '/integrations/instagram'
@@ -561,6 +593,7 @@ export interface FileRouteTypes {
     | '/settings/api-keys'
     | '/settings/members'
     | '/settings/organization'
+    | '/settings/quick-replies'
     | '/settings/webhooks'
     | '/integrations/instagram/onboarding/$tokenId'
     | '/integrations/instagram/onboarding/new'
@@ -606,6 +639,8 @@ export interface FileRouteTypes {
     | '/settings/members/$memberId'
     | '/settings/members/new'
     | '/settings/organization/new'
+    | '/settings/quick-replies/$quickReplyId'
+    | '/settings/quick-replies/new'
     | '/settings/webhooks/$webhookId'
     | '/settings/webhooks/new'
     | '/integrations/instagram'
@@ -614,6 +649,7 @@ export interface FileRouteTypes {
     | '/settings/api-keys'
     | '/settings/members'
     | '/settings/organization'
+    | '/settings/quick-replies'
     | '/settings/webhooks'
     | '/integrations/instagram/onboarding/$tokenId'
     | '/integrations/instagram/onboarding/new'
@@ -661,6 +697,8 @@ export interface FileRouteTypes {
     | '/_auth/settings/members/$memberId'
     | '/_auth/settings/members/new'
     | '/_auth/settings/organization/new'
+    | '/_auth/settings/quick-replies/$quickReplyId'
+    | '/_auth/settings/quick-replies/new'
     | '/_auth/settings/webhooks/$webhookId'
     | '/_auth/settings/webhooks/new'
     | '/_auth/integrations/instagram/'
@@ -669,6 +707,7 @@ export interface FileRouteTypes {
     | '/_auth/settings/api-keys/'
     | '/_auth/settings/members/'
     | '/_auth/settings/organization/'
+    | '/_auth/settings/quick-replies/'
     | '/_auth/settings/webhooks/'
     | '/_auth/integrations/instagram/onboarding/$tokenId'
     | '/_auth/integrations/instagram/onboarding/new'
@@ -872,6 +911,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthSettingsWebhooksIndexRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_auth/settings/quick-replies/': {
+      id: '/_auth/settings/quick-replies/'
+      path: '/settings/quick-replies'
+      fullPath: '/settings/quick-replies'
+      preLoaderRoute: typeof AuthSettingsQuickRepliesIndexRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/_auth/settings/organization/': {
       id: '/_auth/settings/organization/'
       path: '/settings/organization'
@@ -926,6 +972,20 @@ declare module '@tanstack/react-router' {
       path: '/settings/webhooks/$webhookId'
       fullPath: '/settings/webhooks/$webhookId'
       preLoaderRoute: typeof AuthSettingsWebhooksWebhookIdRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/settings/quick-replies/new': {
+      id: '/_auth/settings/quick-replies/new'
+      path: '/settings/quick-replies/new'
+      fullPath: '/settings/quick-replies/new'
+      preLoaderRoute: typeof AuthSettingsQuickRepliesNewRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/settings/quick-replies/$quickReplyId': {
+      id: '/_auth/settings/quick-replies/$quickReplyId'
+      path: '/settings/quick-replies/$quickReplyId'
+      fullPath: '/settings/quick-replies/$quickReplyId'
+      preLoaderRoute: typeof AuthSettingsQuickRepliesQuickReplyIdRouteImport
       parentRoute: typeof AuthRoute
     }
     '/_auth/settings/organization/new': {
@@ -1109,6 +1169,8 @@ interface AuthRouteChildren {
   AuthSettingsMembersMemberIdRoute: typeof AuthSettingsMembersMemberIdRoute
   AuthSettingsMembersNewRoute: typeof AuthSettingsMembersNewRoute
   AuthSettingsOrganizationNewRoute: typeof AuthSettingsOrganizationNewRoute
+  AuthSettingsQuickRepliesQuickReplyIdRoute: typeof AuthSettingsQuickRepliesQuickReplyIdRoute
+  AuthSettingsQuickRepliesNewRoute: typeof AuthSettingsQuickRepliesNewRoute
   AuthSettingsWebhooksWebhookIdRoute: typeof AuthSettingsWebhooksWebhookIdRoute
   AuthSettingsWebhooksNewRoute: typeof AuthSettingsWebhooksNewRoute
   AuthIntegrationsInstagramIndexRoute: typeof AuthIntegrationsInstagramIndexRoute
@@ -1117,6 +1179,7 @@ interface AuthRouteChildren {
   AuthSettingsApiKeysIndexRoute: typeof AuthSettingsApiKeysIndexRoute
   AuthSettingsMembersIndexRoute: typeof AuthSettingsMembersIndexRoute
   AuthSettingsOrganizationIndexRoute: typeof AuthSettingsOrganizationIndexRoute
+  AuthSettingsQuickRepliesIndexRoute: typeof AuthSettingsQuickRepliesIndexRoute
   AuthSettingsWebhooksIndexRoute: typeof AuthSettingsWebhooksIndexRoute
   AuthIntegrationsInstagramOnboardingTokenIdRoute: typeof AuthIntegrationsInstagramOnboardingTokenIdRoute
   AuthIntegrationsInstagramOnboardingNewRoute: typeof AuthIntegrationsInstagramOnboardingNewRoute
@@ -1155,6 +1218,9 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthSettingsMembersMemberIdRoute: AuthSettingsMembersMemberIdRoute,
   AuthSettingsMembersNewRoute: AuthSettingsMembersNewRoute,
   AuthSettingsOrganizationNewRoute: AuthSettingsOrganizationNewRoute,
+  AuthSettingsQuickRepliesQuickReplyIdRoute:
+    AuthSettingsQuickRepliesQuickReplyIdRoute,
+  AuthSettingsQuickRepliesNewRoute: AuthSettingsQuickRepliesNewRoute,
   AuthSettingsWebhooksWebhookIdRoute: AuthSettingsWebhooksWebhookIdRoute,
   AuthSettingsWebhooksNewRoute: AuthSettingsWebhooksNewRoute,
   AuthIntegrationsInstagramIndexRoute: AuthIntegrationsInstagramIndexRoute,
@@ -1163,6 +1229,7 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthSettingsApiKeysIndexRoute: AuthSettingsApiKeysIndexRoute,
   AuthSettingsMembersIndexRoute: AuthSettingsMembersIndexRoute,
   AuthSettingsOrganizationIndexRoute: AuthSettingsOrganizationIndexRoute,
+  AuthSettingsQuickRepliesIndexRoute: AuthSettingsQuickRepliesIndexRoute,
   AuthSettingsWebhooksIndexRoute: AuthSettingsWebhooksIndexRoute,
   AuthIntegrationsInstagramOnboardingTokenIdRoute:
     AuthIntegrationsInstagramOnboardingTokenIdRoute,

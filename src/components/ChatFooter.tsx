@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { Plus, Smile, X } from "lucide-react";
 import {
   newMessage,
@@ -19,10 +19,15 @@ import "dayjs/locale/es";
 import "dayjs/locale/pt";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useCurrentAgent } from "@/queries/useAgents";
+import {
+  useQuickReplies,
+  type QuickReplyRow,
+} from "@/queries/useQuickReplies";
 import { moveCursorToEnd } from "@/utils/UtilityFunctions";
 import { htmlToMarkdown } from "@/utils/htmlToMarkdown";
 import TemplatePicker from "./TemplatePicker";
 import EmojiPicker from "./EmojiPicker";
+import QuickReplyPicker from "./QuickReplyPicker";
 
 function TemplateVarInput({
   placeholder,
@@ -110,6 +115,11 @@ export default function ChatFooter() {
   const { data: agent } = useCurrentAgent();
   const agentId = agent?.id;
 
+  const { data: quickReplies, isLoading: quickRepliesLoading } =
+    useQuickReplies();
+  const [quickReplyDismissed, setQuickReplyDismissed] = useState(false);
+  const [quickReplyHighlight, setQuickReplyHighlight] = useState(0);
+
   const [timer, setTimer] = useState<ReturnType<typeof setTimeout>>();
 
   const editableDiv = useRef<HTMLDivElement>(null);
@@ -145,6 +155,31 @@ export default function ChatFooter() {
   const remaining = tick
     .locale(currentLanguage)
     .to(dayjs(mostRecentIncoming?.timestamp || 0).add(1, "day"), true);
+
+  // Quick replies: WhatsApp Business-style "/" shortcut. Derived straight from
+  // the draft text (no separate open/closed store field) — as soon as the
+  // message stops looking like "/word" the popup goes away on its own.
+  const quickReplyMatch =
+    inCSWindow && !templateDraftEntry?.template && message
+      ? message.match(/^\/(\S*)$/)
+      : null;
+  const quickReplyQuery = quickReplyMatch?.[1] ?? null;
+
+  const filteredQuickReplies = useMemo(() => {
+    if (quickReplyQuery === null) return [];
+    if (!quickReplyQuery) return quickReplies || [];
+    const q = quickReplyQuery.toLowerCase();
+    return (quickReplies || []).filter((reply) =>
+      reply.name.toLowerCase().includes(q),
+    );
+  }, [quickReplyQuery, quickReplies]);
+
+  const showQuickReplyPicker = quickReplyQuery !== null && !quickReplyDismissed;
+
+  useEffect(() => {
+    setQuickReplyDismissed(false);
+    setQuickReplyHighlight(0);
+  }, [quickReplyQuery]);
 
   // Template mode: derive from per-conv store
   const templateDraft = templateDraftEntry?.template;
@@ -305,6 +340,20 @@ export default function ChatFooter() {
 
     if (conv.created_at !== conv.updated_at) {
       debounce(() => saveDraft(conv, updated, sendAsContact), 3000);
+    }
+  };
+
+  const selectQuickReply = (reply: QuickReplyRow) => {
+    if (!conv || !editableDiv.current) return;
+
+    editableDiv.current.focus();
+    editableDiv.current.textContent = reply.content;
+    moveCursorToEnd(editableDiv.current);
+    setMessage(reply.content);
+    setQuickReplyDismissed(true);
+
+    if (conv.created_at !== conv.updated_at) {
+      debounce(() => saveDraft(conv, reply.content, sendAsContact), 3000);
     }
   };
 
@@ -504,7 +553,18 @@ export default function ChatFooter() {
     conv && (
       <div className="relative mx-[12px] mb-[12px] mt-[4px] lg:mt-[0px] z-10">
         {templatePicker && <TemplatePicker />}
-        {emojiPicker && !templatePicker && (
+        {showQuickReplyPicker && !templatePicker && (
+          <QuickReplyPicker
+            query={quickReplyQuery || ""}
+            replies={filteredQuickReplies}
+            isLoading={quickRepliesLoading}
+            highlightedIndex={quickReplyHighlight}
+            onHighlight={setQuickReplyHighlight}
+            onSelect={selectQuickReply}
+            onClose={() => setQuickReplyDismissed(true)}
+          />
+        )}
+        {emojiPicker && !templatePicker && !showQuickReplyPicker && (
           <EmojiPicker onSelect={insertEmoji} />
         )}
         <div
@@ -615,6 +675,32 @@ export default function ChatFooter() {
                     }
                   }}
                   onKeyDown={(event) => {
+                    if (showQuickReplyPicker) {
+                      if (event.key === "ArrowDown") {
+                        event.preventDefault();
+                        setQuickReplyHighlight((i) =>
+                          Math.min(i + 1, filteredQuickReplies.length - 1),
+                        );
+                        return;
+                      }
+                      if (event.key === "ArrowUp") {
+                        event.preventDefault();
+                        setQuickReplyHighlight((i) => Math.max(i - 1, 0));
+                        return;
+                      }
+                      if (
+                        (event.key === "Enter" || event.key === "Tab") &&
+                        !event.shiftKey &&
+                        filteredQuickReplies[quickReplyHighlight]
+                      ) {
+                        event.preventDefault();
+                        selectQuickReply(
+                          filteredQuickReplies[quickReplyHighlight],
+                        );
+                        return;
+                      }
+                    }
+
                     if (event.key === "Enter" && event.ctrlKey) {
                       // toggle("sendAsContact") is handled at window level, nonetheless this
                       // no-op block prevents from sending the message when pressing ctrl+enter
