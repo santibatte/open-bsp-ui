@@ -1,14 +1,18 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import useBoundStore from "@/stores/useBoundStore";
-import { Search, X, MessageSquarePlus, MessageCircle } from "lucide-react";
+import { MessageSquarePlus, MessageCircle } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { startConversation } from "@/utils/ConversationUtils";
 import { useState } from "react";
 import { formatPhoneNumber } from "@/utils/FormatUtils";
 import SectionHeader from "@/components/SectionHeader";
 import { useOrganizationsAddresses } from "@/queries/useOrganizationsAddresses";
+import { useContacts } from "@/queries/useContacts";
 import SectionItem from "@/components/SectionItem";
 import SectionBody from "@/components/SectionBody";
+import SearchBar from "@/components/SearchBar";
+import Avatar from "@/components/Avatar";
+import Fuse from "fuse.js";
 
 export const Route = createFileRoute("/_auth/conversations/new")({
   component: NewChat,
@@ -18,6 +22,7 @@ function NewChat() {
   const { translate: t } = useTranslation();
   const navigate = useNavigate();
   const { data: addresses } = useOrganizationsAddresses();
+  const { data: contacts } = useContacts();
   const activeOrgId = useBoundStore((state) => state.ui.activeOrgId);
 
   const localAddress = addresses?.find(
@@ -29,6 +34,24 @@ function NewChat() {
   );
 
   const [phoneNumber, setPhoneNumber] = useState("");
+
+  // Only contacts reachable over WhatsApp make sense here — a scheduled
+  // patient synced from base_pacientes/Calendly who never wrote in has a
+  // `contacts` row (see useContacts) but no conversation yet, which is
+  // exactly the case this screen exists for.
+  const whatsappContacts = (contacts ?? []).filter((contact) =>
+    contact.addresses?.some((a) => a.service === "whatsapp"),
+  );
+
+  let filteredContacts = whatsappContacts;
+
+  if (phoneNumber) {
+    const fuse = new Fuse(whatsappContacts, {
+      threshold: 0.4,
+      keys: ["name", "addresses.address"],
+    });
+    filteredContacts = fuse.search(phoneNumber).map((r) => r.item);
+  }
 
   function sanitizePhoneNumber(phone: string): string {
     // Remove all non-digit characters
@@ -51,25 +74,50 @@ function NewChat() {
     <div className="flex flex-col h-full">
       <SectionHeader title={t("Nueva conversación")} />
 
-      <div className="px-[20px] pb-[12px] flex">
-        <div className="flex items-center w-full bg-incoming-chat-bubble h-[40px] rounded-full hover:ring ring-border px-[12px] text-foreground">
-          <Search className="text-muted-foreground w-[16px] h-[16px] stroke-[3px] shrink-0" />
-          <input
-            placeholder={t("Buscar nombre o número de teléfono")}
-            className="bg-transparent border-none outline-none w-full h-full text-[15px] mx-[12px] placeholder:text-muted-foreground"
-            value={phoneNumber}
-            onChange={(e) => setPhoneNumber(e.target.value)}
-          />
-          {phoneNumber && (
-            <X
-              className="cursor-pointer text-muted-foreground w-[16px] h-[16px] stroke-[3px]"
-              onClick={() => setPhoneNumber("")}
-            />
-          )}
-        </div>
-      </div>
+      <SearchBar
+        value={phoneNumber}
+        onChange={setPhoneNumber}
+        placeholder={t("Buscar nombre o número de teléfono")}
+        autoFocus
+      />
 
       <SectionBody>
+        {filteredContacts.map((contact) => {
+          const whatsappAddress = contact.addresses?.find(
+            (a) => a.service === "whatsapp",
+          );
+
+          if (!whatsappAddress || !whatsappAddresses?.length || !activeOrgId) {
+            return null;
+          }
+
+          return (
+            <SectionItem
+              key={contact.id}
+              title={contact.name || t("Sin nombre")}
+              description={formatPhoneNumber(whatsappAddress.address)}
+              aside={
+                <Avatar
+                  fallback={contact.name?.substring(0, 2).toUpperCase() || "?"}
+                  size={40}
+                  className="bg-muted text-muted-foreground"
+                />
+              }
+              onClick={() => {
+                const convId = startConversation({
+                  organization_id: activeOrgId,
+                  organization_address: whatsappAddresses[0].address,
+                  contact_address: whatsappAddress.address,
+                  service: "whatsapp",
+                  name:
+                    contact.name || formatPhoneNumber(whatsappAddress.address),
+                });
+
+                navigate({ to: "/conversations", hash: convId });
+              }}
+            />
+          );
+        })}
         {localAddress && (
           <SectionItem
             title={t("Nueva conversación de prueba")}
@@ -97,7 +145,14 @@ function NewChat() {
         )}
 
         {!!whatsappAddresses?.length &&
-          phoneNumber.replace(/\D/g, "").length >= 10 && (
+          phoneNumber.replace(/\D/g, "").length >= 10 &&
+          !filteredContacts.some((contact) =>
+            contact.addresses?.some(
+              (a) =>
+                a.service === "whatsapp" &&
+                a.address === sanitizePhoneNumber(phoneNumber),
+            ),
+          ) && (
             <SectionItem
               title={formatPhoneNumber(sanitizePhoneNumber(phoneNumber))}
               aside={
