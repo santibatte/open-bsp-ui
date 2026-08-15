@@ -22,3 +22,4 @@ mise.toml
 
 .tanstack
 dist/
+.vercel
