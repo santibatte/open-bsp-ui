@@ -37,17 +37,34 @@ type MediaLoad = {
   handledOnce?: boolean;
 };
 
+export type ConversationsPagination = {
+  cursor: string | null; // oldest message timestamp fetched so far (init_data p_until cursor)
+  exhausted: boolean; // true once a page came back short, meaning there's nothing older left
+  loading: boolean;
+};
+
+export const DEFAULT_CONVERSATIONS_PAGINATION: ConversationsPagination = {
+  cursor: null,
+  exhausted: false,
+  loading: true,
+};
+
 export type ChatState = {
   conversations: Map<string, ConversationRow>;
   messages: Map<string, Map<string, MessageRow>>; // TODO: replace the nested maps with a data structure capable of prefix search (a Trie) - cabra 2024/07/26
   textDrafts: Map<string, string>;
   fileDrafts: Map<string, FileDraft[]>;
   mediaLoads: Map<string, MediaLoad>;
+  conversationsPagination: Map<string, ConversationsPagination>; // keyed by organization_id
 };
 
 export type ChatActions = {
   pushConversations: (convs: ConversationRow[]) => void;
   pushMessages: (msgs: MessageRow[]) => void;
+  setConversationsPagination: (
+    orgId: string,
+    patch: Partial<ConversationsPagination>,
+  ) => void;
   setMediaLoad: (messageId: string, mediaLoad: MediaLoad) => void;
   setConversationTextDraft: (convId: string, textDraft: string) => void;
   setConversationFileDrafts: (convId: string, drafts: FileDraft[]) => void;
@@ -75,6 +92,29 @@ export const createChatSlice: StateCreator<Partial<AppState>> = (
   textDrafts: new Map(),
   fileDrafts: new Map(),
   mediaLoads: new Map(),
+  conversationsPagination: new Map(),
+  setConversationsPagination: (
+    orgId: string,
+    patch: Partial<ConversationsPagination>,
+  ) =>
+    set((state) => {
+      const conversationsPagination = new Map(
+        state.chat.conversationsPagination,
+      );
+
+      conversationsPagination.set(orgId, {
+        ...DEFAULT_CONVERSATIONS_PAGINATION,
+        ...conversationsPagination.get(orgId),
+        ...patch,
+      });
+
+      return {
+        chat: {
+          ...state.chat,
+          conversationsPagination,
+        },
+      };
+    }),
   pushConversations: (convs: ConversationRow[]) =>
     set((state) => {
       const conversations = new Map(state.chat.conversations);

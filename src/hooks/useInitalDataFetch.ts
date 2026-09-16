@@ -17,12 +17,29 @@ export const useInitialDataFetch = () => {
     (state) => state.chat.pushConversations,
   );
   const pushMessages = useBoundStore((state) => state.chat.pushMessages);
+  const setConversationsPagination = useBoundStore(
+    (state) => state.chat.setConversationsPagination,
+  );
 
   const PHASE1_LIMIT = 200;
+  const PHASE2_LIMIT = 100;
+
+  function oldestTimestamp(msgs: MessageRow[]) {
+    return msgs.reduce(
+      (min, m) => (+new Date(m.timestamp) < +new Date(min) ? m.timestamp : min),
+      msgs[0].timestamp,
+    );
+  }
 
   // App init: windowed fetch via RPC (timestamp-based), returns convs + msgs
   const initData = async () => {
     if (!activeOrgId) return;
+
+    setConversationsPagination(activeOrgId, {
+      cursor: null,
+      exhausted: false,
+      loading: true,
+    });
 
     // Phase 1: recent messages with chat context
     const { data: phase1 } = await supabase
@@ -40,19 +57,31 @@ export const useInitialDataFetch = () => {
     // Phase 2: older conversations with preview messages
     // Skip if phase 1 returned fewer than the limit (all messages fit)
     if (p1.messages.length >= PHASE1_LIMIT) {
-      const oldest = p1.messages[p1.messages.length - 1].timestamp;
       const { data: phase2 } = await supabase
         .rpc("init_data", {
           p_organization_id: activeOrgId,
-          p_limit: 100,
+          p_limit: PHASE2_LIMIT,
           p_per_conversation: 5,
-          p_until: oldest,
+          p_until: oldestTimestamp(p1.messages),
         })
         .throwOnError();
 
       const p2 = phase2 as unknown as InitDataResponse;
       pushConversations(p2.conversations);
       pushMessages(p2.messages);
+
+      setConversationsPagination(activeOrgId, {
+        loading: false,
+        exhausted: p2.messages.length < PHASE2_LIMIT,
+        cursor: p2.messages.length ? oldestTimestamp(p2.messages) : null,
+      });
+    } else {
+      // Everything fit in phase 1: nothing older is left to page through
+      setConversationsPagination(activeOrgId, {
+        loading: false,
+        exhausted: true,
+        cursor: null,
+      });
     }
   };
 
