@@ -2,6 +2,7 @@ import { Dropdown, type MenuProps } from "antd";
 import useBoundStore from "@/stores/useBoundStore";
 import { type MessageRow } from "@/supabase/client";
 import { isArchived } from "@/stores/uiSlice";
+import { mostRecentVisibleMessage } from "@/stores/chatSlice";
 import { useTranslation } from "@/hooks/useTranslation";
 import { updateConvExtra } from "@/utils/ConversationUtils";
 
@@ -19,12 +20,8 @@ export default function ItemActions({
   const conversation = useBoundStore((state) =>
     state.chat.conversations.get(itemId || ""),
   );
-  const mostRecentMsg: MessageRow | undefined = useBoundStore(
-    (state) =>
-      state.chat.messages
-        .get(itemId || "")
-        ?.values()
-        .next().value,
+  const mostRecentMsg: MessageRow | undefined = useBoundStore((state) =>
+    mostRecentVisibleMessage(state.chat.messages.get(itemId || "")),
   );
 
   const { translate: t } = useTranslation();

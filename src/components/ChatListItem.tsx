@@ -10,6 +10,7 @@ import {
 } from "@/supabase/client";
 import ServiceIcon from "./ServiceIcon";
 import ItemActions from "./ItemActions";
+import { isBroadcastMessage } from "@/stores/chatSlice";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 import "dayjs/locale/pt";
@@ -193,10 +194,14 @@ export default function ChatListItem({ itemId }: { itemId: string }) {
       [],
   );
 
-  // If the role is not admin, then do not show internal messages.
-  const mostRecent = messages?.find(
-    (m) => isAdmin || m.direction !== "internal",
-  );
+  // If the role is not admin, then do not show internal messages. Broadcast
+  // sends (campaigns) are skipped too — they are not real conversation
+  // activity — falling back to them only if a conversation has never had
+  // anything else, so it does not look empty.
+  const mostRecent =
+    messages?.find(
+      (m) => (isAdmin || m.direction !== "internal") && !isBroadcastMessage(m),
+    ) ?? messages?.find((m) => isAdmin || m.direction !== "internal");
 
   // Group previews are prefixed with the sender name, as in WhatsApp Web.
   const previewSenderAddress =
@@ -238,6 +243,11 @@ export default function ChatListItem({ itemId }: { itemId: string }) {
 
     // Messages are sorted by most recent first.
     for (const msg of messages) {
+      // A campaign/broadcast send does not count as a reply — skip it so it
+      // cannot mark a patient's real unanswered messages as responded.
+      if (isBroadcastMessage(msg)) {
+        continue;
+      }
       if (msg.direction === "incoming" && !countBreak) {
         count += 1;
       } else if (

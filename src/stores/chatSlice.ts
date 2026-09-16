@@ -24,6 +24,33 @@ export function timestampDescending(a?: MessageRow, b?: MessageRow) {
   return (b?.id || "").localeCompare(a?.id || "");
 }
 
+// A bulk/campaign send (content.broadcast, set by
+// consultorio_dermatologico/scripts/lib/meta_send_log.py) is stored in
+// `messages` so it shows up in the conversation thread and the bot's context,
+// but it is not real conversation activity — it must not bury a patient's
+// unanswered message under a fresh timestamp, nor mark it as answered.
+export function isBroadcastMessage(msg?: MessageRow) {
+  return (
+    msg?.direction === "outgoing" &&
+    (msg.content as { broadcast?: boolean }).broadcast === true
+  );
+}
+
+// Most recent message, skipping broadcast sends. Used for list ordering,
+// unread counts, the pendientes/24h filters and the archived/unarchived
+// toggle. Falls back to the actual most recent message when a conversation
+// has never had anything else (e.g. a first-contact campaign with no reply
+// yet), so it still surfaces rather than looking empty.
+export function mostRecentVisibleMessage(
+  messages?: Map<string, MessageRow>,
+): MessageRow | undefined {
+  if (!messages) return undefined;
+  for (const msg of messages.values()) {
+    if (!isBroadcastMessage(msg)) return msg;
+  }
+  return messages.values().next().value;
+}
+
 export type FileDraft = {
   file: File;
   caption?: string;

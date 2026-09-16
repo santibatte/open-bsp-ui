@@ -4,6 +4,7 @@ import ChatListItem from "./ChatListItem";
 import { type ConversationRow, type MessageRow } from "@/supabase/client";
 import {
   DEFAULT_CONVERSATIONS_PAGINATION,
+  mostRecentVisibleMessage,
   timestampDescending,
 } from "@/stores/chatSlice";
 import { filters, Filters } from "@/stores/uiSlice";
@@ -72,7 +73,7 @@ const ChatList = () => {
   }, [loadMoreConversations]);
 
   function getMostRecentMsg(convId: string): MessageRow | undefined {
-    return messages.get(convId)?.values().next().value;
+    return mostRecentVisibleMessage(messages.get(convId));
   }
 
   let items: ConvMetadata[] = [...conversations]
