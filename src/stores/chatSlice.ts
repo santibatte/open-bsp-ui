@@ -38,7 +38,7 @@ type MediaLoad = {
 };
 
 export type ConversationsPagination = {
-  cursor: string | null; // oldest message timestamp fetched so far (init_data p_until cursor)
+  cursor: string | null; // oldest last_message_at seen so far (list_conversations_page p_before cursor)
   exhausted: boolean; // true once a page came back short, meaning there's nothing older left
   loading: boolean;
 };
