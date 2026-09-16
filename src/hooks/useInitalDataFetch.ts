@@ -3,10 +3,32 @@ import type { ConversationRow, MessageRow } from "@/supabase/client";
 import useBoundStore from "@/stores/useBoundStore";
 import { useEffect, useRef } from "react";
 
-type InitDataResponse = {
-  conversations: ConversationRow[];
+type ConversationsPageResponse = {
+  conversations: (ConversationRow & { last_message_at: string | null })[];
   messages: MessageRow[];
 };
+
+// A conversation with no messages at all sorts last (nulls last) — there's
+// no cursor to advance past it, so once we see one, treat the page as
+// exhausted rather than looping on it forever.
+function oldestConversationCursor(
+  convs: ConversationsPageResponse["conversations"],
+): { cursor: string | null; sawEmptyConv: boolean } {
+  let cursor: string | null = null;
+  let sawEmptyConv = false;
+
+  for (const c of convs) {
+    if (!c.last_message_at) {
+      sawEmptyConv = true;
+      continue;
+    }
+    if (!cursor || +new Date(c.last_message_at) < +new Date(cursor)) {
+      cursor = c.last_message_at;
+    }
+  }
+
+  return { cursor, sawEmptyConv };
+}
 
 export const useInitialDataFetch = () => {
   const activeOrgId = useBoundStore((state) => state.ui.activeOrgId);
@@ -21,17 +43,12 @@ export const useInitialDataFetch = () => {
     (state) => state.chat.setConversationsPagination,
   );
 
-  const PHASE1_LIMIT = 200;
-  const PHASE2_LIMIT = 100;
+  const PHASE1_CONV_LIMIT = 50;
 
-  function oldestTimestamp(msgs: MessageRow[]) {
-    return msgs.reduce(
-      (min, m) => (+new Date(m.timestamp) < +new Date(min) ? m.timestamp : min),
-      msgs[0].timestamp,
-    );
-  }
-
-  // App init: windowed fetch via RPC (timestamp-based), returns convs + msgs
+  // App init: page conversations by their own last-message activity
+  // (list_conversations_page), independent of org-wide message volume — a
+  // conversation with no recent activity no longer falls out of view just
+  // because lots of other conversations were busy since.
   const initData = async () => {
     if (!activeOrgId) return;
 
@@ -41,48 +58,28 @@ export const useInitialDataFetch = () => {
       loading: true,
     });
 
-    // Phase 1: recent messages with chat context
-    const { data: phase1 } = await supabase
-      .rpc("init_data", {
+    const { data } = await supabase
+      .rpc("list_conversations_page", {
         p_organization_id: activeOrgId,
-        p_limit: PHASE1_LIMIT,
+        p_limit: PHASE1_CONV_LIMIT,
         p_per_conversation: 10,
       })
       .throwOnError();
 
-    const p1 = phase1 as unknown as InitDataResponse;
-    pushConversations(p1.conversations);
-    pushMessages(p1.messages);
+    const page = data as unknown as ConversationsPageResponse;
+    pushConversations(page.conversations);
+    pushMessages(page.messages);
 
-    // Phase 2: older conversations with preview messages
-    // Skip if phase 1 returned fewer than the limit (all messages fit)
-    if (p1.messages.length >= PHASE1_LIMIT) {
-      const { data: phase2 } = await supabase
-        .rpc("init_data", {
-          p_organization_id: activeOrgId,
-          p_limit: PHASE2_LIMIT,
-          p_per_conversation: 5,
-          p_until: oldestTimestamp(p1.messages),
-        })
-        .throwOnError();
+    const { cursor, sawEmptyConv } = oldestConversationCursor(
+      page.conversations,
+    );
 
-      const p2 = phase2 as unknown as InitDataResponse;
-      pushConversations(p2.conversations);
-      pushMessages(p2.messages);
-
-      setConversationsPagination(activeOrgId, {
-        loading: false,
-        exhausted: p2.messages.length < PHASE2_LIMIT,
-        cursor: p2.messages.length ? oldestTimestamp(p2.messages) : null,
-      });
-    } else {
-      // Everything fit in phase 1: nothing older is left to page through
-      setConversationsPagination(activeOrgId, {
-        loading: false,
-        exhausted: true,
-        cursor: null,
-      });
-    }
+    setConversationsPagination(activeOrgId, {
+      loading: false,
+      exhausted:
+        page.conversations.length < PHASE1_CONV_LIMIT || sawEmptyConv,
+      cursor,
+    });
   };
 
   // Tab-visibility recovery: flat queries (updated_at-based)
@@ -92,6 +89,7 @@ export const useInitialDataFetch = () => {
       .from("conversations")
       .select()
       .eq("organization_id", activeOrgId)
+      .eq("status", "active")
       .gt("updated_at", since.toISOString())
       .order("updated_at", { ascending: false })
       .limit(999)

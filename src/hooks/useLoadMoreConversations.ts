@@ -3,17 +3,18 @@ import type { ConversationRow, MessageRow } from "@/supabase/client";
 import useBoundStore from "@/stores/useBoundStore";
 import { DEFAULT_CONVERSATIONS_PAGINATION } from "@/stores/chatSlice";
 
-type InitDataResponse = {
-  conversations: ConversationRow[];
+type ConversationsPageResponse = {
+  conversations: (ConversationRow & { last_message_at: string | null })[];
   messages: MessageRow[];
 };
 
-const PAGE_LIMIT = 100;
+const PAGE_LIMIT = 50;
 const PAGE_PER_CONVERSATION = 5;
 
-// Scroll-triggered continuation of useInitialDataFetch's windowed init_data
-// calls: same RPC, same p_until cursor convention, just invoked again once
-// the user nears the bottom of the conversation list.
+// Scroll-triggered continuation of useInitialDataFetch's list_conversations_page
+// calls: same RPC, same p_before cursor convention (oldest last_message_at
+// seen so far), just invoked again once the user nears the bottom of the
+// conversation list.
 export const useLoadMoreConversations = () => {
   const activeOrgId = useBoundStore((state) => state.ui.activeOrgId);
   const pagination = useBoundStore((state) =>
@@ -36,31 +37,37 @@ export const useLoadMoreConversations = () => {
     setConversationsPagination(activeOrgId, { loading: true });
 
     const { data } = await supabase
-      .rpc("init_data", {
+      .rpc("list_conversations_page", {
         p_organization_id: activeOrgId,
         p_limit: PAGE_LIMIT,
         p_per_conversation: PAGE_PER_CONVERSATION,
-        p_until: pagination.cursor ?? undefined,
+        p_before: pagination.cursor ?? undefined,
       })
       .throwOnError();
 
-    const page = data as unknown as InitDataResponse;
+    const page = data as unknown as ConversationsPageResponse;
     pushConversations(page.conversations);
     pushMessages(page.messages);
 
-    const exhausted = page.messages.length < PAGE_LIMIT;
-    const oldest = page.messages.length
-      ? page.messages.reduce(
-          (min, m) =>
-            +new Date(m.timestamp) < +new Date(min) ? m.timestamp : min,
-          page.messages[0].timestamp,
-        )
-      : pagination.cursor;
+    let cursor: string | null = null;
+    let sawEmptyConv = false;
+
+    for (const c of page.conversations) {
+      if (!c.last_message_at) {
+        sawEmptyConv = true;
+        continue;
+      }
+      if (!cursor || +new Date(c.last_message_at) < +new Date(cursor)) {
+        cursor = c.last_message_at;
+      }
+    }
+
+    const exhausted = page.conversations.length < PAGE_LIMIT || sawEmptyConv;
 
     setConversationsPagination(activeOrgId, {
       loading: false,
       exhausted,
-      cursor: exhausted ? pagination.cursor : oldest,
+      cursor: exhausted ? pagination.cursor : cursor,
     });
   };
 };

@@ -38,7 +38,7 @@ type MediaLoad = {
 };
 
 export type ConversationsPagination = {
-  cursor: string | null; // oldest message timestamp fetched so far (init_data p_until cursor)
+  cursor: string | null; // oldest last_message_at seen so far (list_conversations_page p_before cursor)
   exhausted: boolean; // true once a page came back short, meaning there's nothing older left
   loading: boolean;
 };
@@ -49,6 +49,18 @@ export const DEFAULT_CONVERSATIONS_PAGINATION: ConversationsPagination = {
   loading: true,
 };
 
+export type MessageHistoryPagination = {
+  cursor: string | null; // oldest message timestamp fetched so far for this conversation
+  exhausted: boolean; // true once a page came back short, meaning there's nothing older left
+  loading: boolean;
+};
+
+export const DEFAULT_MESSAGE_HISTORY_PAGINATION: MessageHistoryPagination = {
+  cursor: null,
+  exhausted: false,
+  loading: false,
+};
+
 export type ChatState = {
   conversations: Map<string, ConversationRow>;
   messages: Map<string, Map<string, MessageRow>>; // TODO: replace the nested maps with a data structure capable of prefix search (a Trie) - cabra 2024/07/26
@@ -56,6 +68,7 @@ export type ChatState = {
   fileDrafts: Map<string, FileDraft[]>;
   mediaLoads: Map<string, MediaLoad>;
   conversationsPagination: Map<string, ConversationsPagination>; // keyed by organization_id
+  messageHistoryPagination: Map<string, MessageHistoryPagination>; // keyed by conversation_id
 };
 
 export type ChatActions = {
@@ -64,6 +77,10 @@ export type ChatActions = {
   setConversationsPagination: (
     orgId: string,
     patch: Partial<ConversationsPagination>,
+  ) => void;
+  setMessageHistoryPagination: (
+    convId: string,
+    patch: Partial<MessageHistoryPagination>,
   ) => void;
   setMediaLoad: (messageId: string, mediaLoad: MediaLoad) => void;
   setConversationTextDraft: (convId: string, textDraft: string) => void;
@@ -93,6 +110,29 @@ export const createChatSlice: StateCreator<Partial<AppState>> = (
   fileDrafts: new Map(),
   mediaLoads: new Map(),
   conversationsPagination: new Map(),
+  messageHistoryPagination: new Map(),
+  setMessageHistoryPagination: (
+    convId: string,
+    patch: Partial<MessageHistoryPagination>,
+  ) =>
+    set((state) => {
+      const messageHistoryPagination = new Map(
+        state.chat.messageHistoryPagination,
+      );
+
+      messageHistoryPagination.set(convId, {
+        ...DEFAULT_MESSAGE_HISTORY_PAGINATION,
+        ...messageHistoryPagination.get(convId),
+        ...patch,
+      });
+
+      return {
+        chat: {
+          ...state.chat,
+          messageHistoryPagination,
+        },
+      };
+    }),
   setConversationsPagination: (
     orgId: string,
     patch: Partial<ConversationsPagination>,

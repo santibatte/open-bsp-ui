@@ -7,6 +7,11 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.5"
+  }
   billing: {
     Tables: {
       accounts: {
@@ -579,6 +584,116 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_llm_calls: {
+        Row: {
+          cache_creation_tokens: number
+          cached_tokens: number
+          conversation_id: string | null
+          cost_estimate: number | null
+          created_at: string
+          id: number
+          input_tokens: number
+          latency_ms: number | null
+          model: string
+          organization_id: string
+          output_tokens: number
+          step: string
+        }
+        Insert: {
+          cache_creation_tokens?: number
+          cached_tokens?: number
+          conversation_id?: string | null
+          cost_estimate?: number | null
+          created_at?: string
+          id?: never
+          input_tokens?: number
+          latency_ms?: number | null
+          model: string
+          organization_id: string
+          output_tokens?: number
+          step: string
+        }
+        Update: {
+          cache_creation_tokens?: number
+          cached_tokens?: number
+          conversation_id?: string | null
+          cost_estimate?: number | null
+          created_at?: string
+          id?: never
+          input_tokens?: number
+          latency_ms?: number | null
+          model?: string
+          organization_id?: string
+          output_tokens?: number
+          step?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_llm_calls_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agent_respuestas_no_enviadas: {
+        Row: {
+          contact_address: string | null
+          contact_id: string | null
+          conversation_id: string | null
+          created_at: string
+          id: number
+          mensaje_borrador: string
+          mensaje_paciente: string
+          motivo: string
+          offtopic_count: number | null
+          organization_id: string
+          tipo_declarado: string
+        }
+        Insert: {
+          contact_address?: string | null
+          contact_id?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          id?: never
+          mensaje_borrador?: string
+          mensaje_paciente: string
+          motivo: string
+          offtopic_count?: number | null
+          organization_id: string
+          tipo_declarado: string
+        }
+        Update: {
+          contact_address?: string | null
+          contact_id?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          id?: never
+          mensaje_borrador?: string
+          mensaje_paciente?: string
+          motivo?: string
+          offtopic_count?: number | null
+          organization_id?: string
+          tipo_declarado?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_respuestas_no_enviadas_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_respuestas_no_enviadas_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agents: {
         Row: {
           ai: boolean
@@ -1050,6 +1165,50 @@ export type Database = {
           },
         ]
       }
+      precios_vigentes: {
+        Row: {
+          categoria: string | null
+          notas: string | null
+          organization_id: string
+          precio_efectivo: number | null
+          precio_tarjeta: number | null
+          promo: string | null
+          servicio: string
+          updated_at: string
+          vigencia_desde: string | null
+        }
+        Insert: {
+          categoria?: string | null
+          notas?: string | null
+          organization_id: string
+          precio_efectivo?: number | null
+          precio_tarjeta?: number | null
+          promo?: string | null
+          servicio: string
+          updated_at?: string
+          vigencia_desde?: string | null
+        }
+        Update: {
+          categoria?: string | null
+          notas?: string | null
+          organization_id?: string
+          precio_efectivo?: number | null
+          precio_tarjeta?: number | null
+          promo?: string | null
+          servicio?: string
+          updated_at?: string
+          vigencia_desde?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "precios_vigentes_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quick_replies: {
         Row: {
           content: string
@@ -1084,6 +1243,214 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      turno_acciones: {
+        Row: {
+          args: Json
+          contact_address: string | null
+          conversation_id: string | null
+          created_at: string
+          estado: string
+          id: number
+          incoming_message_id: string
+          organization_id: string
+          resultado: Json | null
+          tool: string
+        }
+        Insert: {
+          args: Json
+          contact_address?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          estado: string
+          id?: never
+          incoming_message_id: string
+          organization_id: string
+          resultado?: Json | null
+          tool: string
+        }
+        Update: {
+          args?: Json
+          contact_address?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          estado?: string
+          id?: never
+          incoming_message_id?: string
+          organization_id?: string
+          resultado?: Json | null
+          tool?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "turno_acciones_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vampiresa_campana_destinatarios: {
+        Row: {
+          campana_id: number
+          created_at: string
+          es_prueba: boolean
+          estado: string
+          id: number
+          id_paciente: string | null
+          meta_message_id: string | null
+          meta_status_respuesta: string | null
+          nombre_persona: string
+          notas: string | null
+          numero_telefono: string
+          procesado_at: string | null
+          variable_revisada_humano: boolean
+          variables: Json
+        }
+        Insert: {
+          campana_id: number
+          created_at?: string
+          es_prueba?: boolean
+          estado?: string
+          id?: never
+          id_paciente?: string | null
+          meta_message_id?: string | null
+          meta_status_respuesta?: string | null
+          nombre_persona: string
+          notas?: string | null
+          numero_telefono: string
+          procesado_at?: string | null
+          variable_revisada_humano: boolean
+          variables?: Json
+        }
+        Update: {
+          campana_id?: number
+          created_at?: string
+          es_prueba?: boolean
+          estado?: string
+          id?: never
+          id_paciente?: string | null
+          meta_message_id?: string | null
+          meta_status_respuesta?: string | null
+          nombre_persona?: string
+          notas?: string | null
+          numero_telefono?: string
+          procesado_at?: string | null
+          variable_revisada_humano?: boolean
+          variables?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vampiresa_campana_destinatarios_campana_id_fkey"
+            columns: ["campana_id"]
+            isOneToOne: false
+            referencedRelation: "vampiresa_campanas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vampiresa_campanas: {
+        Row: {
+          creado_por: string | null
+          created_at: string
+          estado: string
+          id: number
+          idioma: string
+          motivo_envio: string
+          nombre: string
+          notas: string | null
+          programada_para: string
+          template_id: string | null
+          template_nombre: string
+        }
+        Insert: {
+          creado_por?: string | null
+          created_at?: string
+          estado?: string
+          id?: never
+          idioma?: string
+          motivo_envio: string
+          nombre: string
+          notas?: string | null
+          programada_para: string
+          template_id?: string | null
+          template_nombre: string
+        }
+        Update: {
+          creado_por?: string | null
+          created_at?: string
+          estado?: string
+          id?: never
+          idioma?: string
+          motivo_envio?: string
+          nombre?: string
+          notas?: string | null
+          programada_para?: string
+          template_id?: string | null
+          template_nombre?: string
+        }
+        Relationships: []
+      }
+      vampiresa_meta_sends_log: {
+        Row: {
+          created_at: string
+          enviado_por: string | null
+          es_prueba: boolean
+          fecha: string
+          hora: string
+          id: number
+          id_paciente: string | null
+          meta_message_id: string | null
+          meta_status_respuesta: string | null
+          motivo_envio: string | null
+          nombre_persona: string
+          notas: string | null
+          numero_telefono: string
+          template_id: string | null
+          template_nombre: string
+          variable_1_enviada: string | null
+          variable_revisada_humano: boolean
+        }
+        Insert: {
+          created_at?: string
+          enviado_por?: string | null
+          es_prueba?: boolean
+          fecha: string
+          hora: string
+          id?: never
+          id_paciente?: string | null
+          meta_message_id?: string | null
+          meta_status_respuesta?: string | null
+          motivo_envio?: string | null
+          nombre_persona: string
+          notas?: string | null
+          numero_telefono: string
+          template_id?: string | null
+          template_nombre: string
+          variable_1_enviada?: string | null
+          variable_revisada_humano: boolean
+        }
+        Update: {
+          created_at?: string
+          enviado_por?: string | null
+          es_prueba?: boolean
+          fecha?: string
+          hora?: string
+          id?: never
+          id_paciente?: string | null
+          meta_message_id?: string | null
+          meta_status_respuesta?: string | null
+          motivo_envio?: string | null
+          nombre_persona?: string
+          notas?: string | null
+          numero_telefono?: string
+          template_id?: string | null
+          template_nombre?: string
+          variable_1_enviada?: string | null
+          variable_revisada_humano?: boolean
+        }
+        Relationships: []
       }
       webhooks: {
         Row: {
@@ -1141,6 +1508,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      claim_conversation_processing: {
+        Args: {
+          _conversation_id: string
+          _invocation_id: string
+          _ttl_seconds?: number
+        }
+        Returns: boolean
+      }
       contact_address_update_rules: {
         Args: {
           p_address: string
@@ -1155,6 +1530,10 @@ export type Database = {
         Args: { role?: Database["public"]["Enums"]["role"] }
         Returns: string[]
       }
+      get_conversation_history: {
+        Args: { p_before?: string; p_conversation_id: string; p_limit?: number }
+        Returns: Json
+      }
       init_data: {
         Args: {
           p_limit?: number
@@ -1162,6 +1541,15 @@ export type Database = {
           p_per_conversation?: number
           p_since?: string
           p_until?: string
+        }
+        Returns: Json
+      }
+      list_conversations_page: {
+        Args: {
+          p_before?: string
+          p_limit?: number
+          p_organization_id: string
+          p_per_conversation?: number
         }
         Returns: Json
       }
@@ -1175,6 +1563,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      merge_contact_datos_contacto: {
+        Args: { _contact_id: string; _datos: Json }
+        Returns: undefined
+      }
       merge_update_jsonb: {
         Args: { object: Json; path: string[]; target: Json }
         Returns: Json
@@ -1182,6 +1574,10 @@ export type Database = {
       org_update_by_admin_rules: {
         Args: { p_id: string; p_name: string }
         Returns: boolean
+      }
+      release_conversation_processing: {
+        Args: { _conversation_id: string; _invocation_id: string }
+        Returns: undefined
       }
     }
     Enums: {
@@ -1224,6 +1620,7 @@ export type Database = {
           public: boolean | null
           type: Database["storage"]["Enums"]["buckettype"]
           updated_at: string | null
+          versioning_status: string
         }
         Insert: {
           allowed_mime_types?: string[] | null
@@ -1237,6 +1634,7 @@ export type Database = {
           public?: boolean | null
           type?: Database["storage"]["Enums"]["buckettype"]
           updated_at?: string | null
+          versioning_status?: string
         }
         Update: {
           allowed_mime_types?: string[] | null
@@ -1250,6 +1648,7 @@ export type Database = {
           public?: boolean | null
           type?: Database["storage"]["Enums"]["buckettype"]
           updated_at?: string | null
+          versioning_status?: string
         }
         Relationships: []
       }
@@ -1304,101 +1703,6 @@ export type Database = {
         }
         Relationships: []
       }
-      iceberg_namespaces: {
-        Row: {
-          bucket_name: string
-          catalog_id: string
-          created_at: string
-          id: string
-          metadata: Json
-          name: string
-          updated_at: string
-        }
-        Insert: {
-          bucket_name: string
-          catalog_id: string
-          created_at?: string
-          id?: string
-          metadata?: Json
-          name: string
-          updated_at?: string
-        }
-        Update: {
-          bucket_name?: string
-          catalog_id?: string
-          created_at?: string
-          id?: string
-          metadata?: Json
-          name?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "iceberg_namespaces_catalog_id_fkey"
-            columns: ["catalog_id"]
-            isOneToOne: false
-            referencedRelation: "buckets_analytics"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      iceberg_tables: {
-        Row: {
-          bucket_name: string
-          catalog_id: string
-          created_at: string
-          id: string
-          location: string
-          name: string
-          namespace_id: string
-          remote_table_id: string | null
-          shard_id: string | null
-          shard_key: string | null
-          updated_at: string
-        }
-        Insert: {
-          bucket_name: string
-          catalog_id: string
-          created_at?: string
-          id?: string
-          location: string
-          name: string
-          namespace_id: string
-          remote_table_id?: string | null
-          shard_id?: string | null
-          shard_key?: string | null
-          updated_at?: string
-        }
-        Update: {
-          bucket_name?: string
-          catalog_id?: string
-          created_at?: string
-          id?: string
-          location?: string
-          name?: string
-          namespace_id?: string
-          remote_table_id?: string | null
-          shard_id?: string | null
-          shard_key?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "iceberg_tables_catalog_id_fkey"
-            columns: ["catalog_id"]
-            isOneToOne: false
-            referencedRelation: "buckets_analytics"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "iceberg_tables_namespace_id_fkey"
-            columns: ["namespace_id"]
-            isOneToOne: false
-            referencedRelation: "iceberg_namespaces"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       migrations: {
         Row: {
           executed_at: string | null
@@ -1422,9 +1726,12 @@ export type Database = {
       }
       objects: {
         Row: {
+          archived_at: string | null
           bucket_id: string | null
           created_at: string | null
           id: string
+          is_delete_marker: boolean
+          is_versioned: boolean
           last_accessed_at: string | null
           metadata: Json | null
           name: string | null
@@ -1436,9 +1743,12 @@ export type Database = {
           version: string | null
         }
         Insert: {
+          archived_at?: string | null
           bucket_id?: string | null
           created_at?: string | null
           id?: string
+          is_delete_marker?: boolean
+          is_versioned?: boolean
           last_accessed_at?: string | null
           metadata?: Json | null
           name?: string | null
@@ -1450,9 +1760,12 @@ export type Database = {
           version?: string | null
         }
         Update: {
+          archived_at?: string | null
           bucket_id?: string | null
           created_at?: string | null
           id?: string
+          is_delete_marker?: boolean
+          is_versioned?: boolean
           last_accessed_at?: string | null
           metadata?: Json | null
           name?: string | null
@@ -1764,12 +2077,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1793,11 +2106,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1818,11 +2131,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1843,11 +2156,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1860,11 +2173,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1908,4 +2221,3 @@ export const Constants = {
     },
   },
 } as const
-

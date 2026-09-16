@@ -11,6 +11,10 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useCurrentOrganization } from "@/queries/useOrganizations";
 import { useCurrentAgent } from "@/queries/useAgents";
 import { AVATAR_COLORS } from "@/utils/colors";
+import { useLoadOlderMessages } from "@/hooks/useLoadOlderMessages";
+
+// Within this many px of the top, trigger loading older messages.
+const LOAD_OLDER_THRESHOLD_PX = 200;
 
 type EnvelopeType = { message: MessageRow; first: boolean; last: boolean };
 type SeparatorType = { text: string; first: true; last: true };
@@ -60,6 +64,11 @@ export default function Chat() {
   const isAdmin = ["admin", "owner"].includes(agent?.extra?.role || "");
 
   const scroller = useRef<HTMLDivElement>(null);
+  const prependingOlder = useRef(false);
+  const prevScrollHeight = useRef<number | null>(null);
+
+  const { loadOlder, loading: loadingOlder, exhausted: olderExhausted } =
+    useLoadOlderMessages(activeConvId);
 
   const { translate: t, currentLanguage } = useTranslation();
 
@@ -212,18 +221,58 @@ export default function Chat() {
   }, [messages.length, activeConvId]);
 
   useEffect(() => {
+    prependingOlder.current = false;
+    prevScrollHeight.current = null;
     scrollToBottom(false);
   }, [activeConvId]);
 
   // Keep the scroll at the bottom when new messages are added
   // prevent the scroll from jumping when the user is reading old messages
+  //
+  // Exception: when the new messages are OLDER history prepended above what's
+  // already shown (triggered by scrolling near the top), keep the reader's
+  // place instead of jumping to the bottom — restore the same scroll offset
+  // relative to content that was already on screen.
   useEffect(() => {
     const scrollRef = scroller.current;
     if (!scrollRef) {
       return;
     }
+
+    if (prependingOlder.current) {
+      const prevHeight = prevScrollHeight.current ?? scrollRef.scrollHeight;
+      scrollRef.scrollTop += scrollRef.scrollHeight - prevHeight;
+      prependingOlder.current = false;
+      prevScrollHeight.current = null;
+      return;
+    }
+
     scrollToBottom();
   }, [messages.length]);
+
+  const handleScroll = async () => {
+    const scrollRef = scroller.current;
+    if (!scrollRef) return;
+
+    if (
+      scrollRef.scrollTop < LOAD_OLDER_THRESHOLD_PX &&
+      !loadingOlder &&
+      !olderExhausted
+    ) {
+      prependingOlder.current = true;
+      prevScrollHeight.current = scrollRef.scrollHeight;
+
+      const gotNew = await loadOlder();
+
+      // Nothing came back: the messages.length effect won't fire to clear
+      // these, so clear them here or a later real message would wrongly
+      // skip scrolling to bottom.
+      if (!gotNew) {
+        prependingOlder.current = false;
+        prevScrollHeight.current = null;
+      }
+    }
+  };
 
   // Adjust scroll when visual viewport resizes (e.g. mobile keyboard opens)
   useEffect(() => {
@@ -272,6 +321,7 @@ export default function Chat() {
     activeConvId && (
       <div
         ref={scroller}
+        onScroll={handleScroll}
         className="grow pb-[8px] overflow-y-auto [scrollbar-gutter:stable]"
       >
         <div className="min-h-[12px]" />
